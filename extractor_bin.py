@@ -347,7 +347,7 @@ class Package:
             file_typename = get_file_typename(file_type, file_subtype, ref_id, ref_pkg_id)
 
             decoded_entry = SPkgEntryDecoded(np.uint16(count), file_name, file_typename,
-                                             binascii.hexlify(entry.EntryABin).decode().upper(),
+                                             gf.get_flipped_hex(binascii.hexlify(entry.EntryABin).decode().upper(), 8),
                                              ref_id, ref_pkg_id, ref_unk_id, file_type, file_subtype, starting_block,
                                              starting_block_offset, file_size, unknown)
             entries.append(decoded_entry)
@@ -471,10 +471,10 @@ def unpack_all(path, custom_direc):
         # if '0104' not in pkg:
         #     continue
         pkg = Package(f'{path}/{pkg_full}')
-        pkg.extract_package(extract=True, custom_direc=custom_direc)
+        pkg.extract_package(extract=False, custom_direc=custom_direc)
 
 
 if __name__ == '__main__':
-    version = 'ps3demo'
+    version = 'ps3'
     prefix = 'ps3'
     unpack_all('I:/d1/packages/', custom_direc=f'I:/d1/output/')

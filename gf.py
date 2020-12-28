@@ -46,19 +46,19 @@ def get_hash_from_file(file):
     return two[2:]
 
 
-# def get_pkg_name(file):
-#     if not file:
-#         print(f'{file} is invalid.')
-#         return None
-#     pkg_id = file.split('-')[0]
-#     for folder in os.listdir('I:/d2_output_3_0_0_3/'):
-#         if pkg_id.lower() in folder.lower():
-#             pkg_name = folder
-#             break
-#     else:
-#         print(f'Could not find folder for {file}. File is likely not a model or folder does not exist.')
-#         return None
-#     return pkg_name
+def get_pkg_name(file):
+    if not file:
+        print(f'{file} is invalid.')
+        return None
+    pkg_id = file.split('-')[0]
+    for folder in os.listdir('I:/d1/output/'):
+        if pkg_id.lower() in folder.lower():
+            pkg_name = folder
+            break
+    else:
+        print(f'Could not find folder for {file}. File is likely not a model or folder does not exist.')
+        return None
+    return pkg_name
 
 
 def mkdir(path):
@@ -102,6 +102,7 @@ def get_int32(hx, offset):
 
 def get_int16(hx, offset):
     return int.from_bytes(hx[offset:offset+2], byteorder='little')
+
 
 def get_int32_big(hx, offset):
     return int.from_bytes(hx[offset:offset+4], byteorder='big')
