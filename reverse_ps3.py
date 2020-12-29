@@ -97,6 +97,11 @@ def find_str_binary(search_str, do_print=True, select=None, to_ban=False):
 
 
 if __name__ == '__main__':
-    find_str_binary(b'\xCA\xFE\x00\x80\x00\x80', select='gear')
+    # Speaker
+    # find_str_binary(b'\x80\x87\x63\xF9', select='_')
+    # find_str_binary(b'\x80\xC3\xEF\x65', select='trv')
+
+    # Lightmail from API
+    find_str_binary(b'\xA3\xDC', select='gear')
     # find_str_binary(b'\x10\xA3\xE8\xF2\xE9\x63\x00\x01', select='0114')
 

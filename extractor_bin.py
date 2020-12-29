@@ -14,68 +14,27 @@ Main program with every other file concatenated into a single file
 """
 
 
-def get_file_typename(file_type, file_subtype, ref_id, ref_pkg):
-    # if file_type == 8:
-    #     if ref_id == 5037 and ref_pkg == 4:
-    #         return 'Mapping Data'
-    #     elif ref_id == 6641 and ref_pkg == 4:
-    #         return 'Text Data'
-    #     elif ref_id == 6639 and ref_pkg == 4:
-    #         return 'Text Header'
-    #     elif ref_id == 3396 and ref_pkg == 3:
-    #         return 'Static Model Header 1'
-    #     elif ref_id == 3376 and ref_pkg == 3:
-    #         return 'Static Model Header 2'
-    #     elif ref_id == 0x1AD8 and ref_pkg == 4:
-    #         return 'Dynamic Model Header 1'
-    #     elif ref_id == 6918 and ref_pkg == 4:
-    #         return 'Dynamic Model Header 2'
-    #     elif ref_id == 3847 and ref_pkg == 3:
-    #         return 'Dynamic Model Header 3'
-    #     elif ref_id == 0xDAA and ref_pkg == 3:
-    #         return 'Material'
-    #     return '8080xxxx Structure File'
-    # elif file_type == 24:
-    #     return 'OTF Font'
-    # elif file_type == 26:
-    #     if file_subtype == 4 or file_subtype == 5:
-    #         return 'BKHD'
-    #     elif file_subtype == 6:
-    #         return 'RIFF'
-    #     elif file_subtype == 7:
-    #         return 'Havok'
-    # elif file_type == 27:
-    #     return 'USM Video'
-    # elif file_type == 32:
-    #     if file_subtype == 1 or file_subtype == 2 or file_subtype == 3:
-    #         return 'Texture Header'
-    #     elif file_subtype == 4:
-    #         return 'Vertex Header'
-    #     elif file_subtype == 6:
-    #         return 'Faces Header'
-    #     elif file_subtype == 7:
-    #         return '16 byte Unknown Header'
-    # elif file_type == 33:
-    #     return 'DirectX Bytecode Header'
-    # elif file_type == 34 and file_subtype == 1:
-    #     return 'Cbuffer Dyemap Header'
-    # elif file_type == 40:
-    #     if file_subtype == 1 or file_subtype == 2 or file_subtype == 3:
-    #         return 'Texture Data'
-    #     elif file_subtype == 4:
-    #         return 'Vertex Data'
-    #     elif file_subtype == 6:
-    #         return 'Faces Data'
-    #     elif file_subtype == 7:
-    #         return 'Unknown Data'
-    # elif file_type == 41:
-    #     return 'DirectX Bytecode Data'
-    # elif file_type == 42 and file_subtype == 1:
-    #     return 'Cbuffer Dyemap Data'
-    # elif file_type == 48:
-    #     return 'Texture Header (UI)'
-    # else:
-    return 'Unknown'
+def get_file_typename(file_type, file_subtype, reference, file_size):
+    if file_type == 8:
+        if reference == 'B51A8080':
+            return 'Dynamic Model Header 3?'
+        return '8080xxxx Structure File'
+    elif file_type == 16 and file_subtype == 0:
+        if file_size == 80:
+            return 'Texture Header'
+        elif file_size == 0:
+            return 'Index/Vertex Header'
+        return 'Header'
+    elif file_type == 0 and file_subtype == 4:
+        return 'Model-related Data'
+    elif file_type == 4 and file_subtype == 0:
+        return 'RIFX Data'
+    elif file_type == 32 and file_subtype == 4:
+        return 'Small Texture Data'
+    elif file_type == 2 and file_subtype == 4:
+        return 'Large Texture Data'
+    else:
+        return 'Unknown'
 
 
 def calculate_pkg_id(entry_a_data):
@@ -344,10 +303,11 @@ class Package:
             starting_block, starting_block_offset = decode_entry_c(entry.EntryD)
             file_size, unknown = decode_entry_d(entry.EntryC, entry.EntryC)
             file_name = f"{self.package_header.PackageIDH}-{gf.fill_hex_with_zeros(hex(count)[2:], 4)}"
-            file_typename = get_file_typename(file_type, file_subtype, ref_id, ref_pkg_id)
+            reference = gf.get_flipped_hex(binascii.hexlify(entry.EntryABin).decode().upper(), 8)
+            file_typename = get_file_typename(file_type, file_subtype, reference, file_size)
 
             decoded_entry = SPkgEntryDecoded(np.uint16(count), file_name, file_typename,
-                                             gf.get_flipped_hex(binascii.hexlify(entry.EntryABin).decode().upper(), 8),
+                                             reference,
                                              ref_id, ref_pkg_id, ref_unk_id, file_type, file_subtype, starting_block,
                                              starting_block_offset, file_size, unknown)
             entries.append(decoded_entry)

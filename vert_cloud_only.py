@@ -35,6 +35,7 @@ def get_verts_data(verts_file, stride, float16, offset=0):
             else:
                 flt = struct.unpack('f', bytes.fromhex(gf.get_flipped_hex(hex_data[j*8:j*8+8], 8)))[0]
             coord.append(flt)
+        coord[-1] = 0
         coords.append(coord)
     return coords
 
@@ -49,7 +50,7 @@ def write_obj(verts_file):
 
 if __name__ == '__main__':
     pkg_db.start_db_connection('ps3')
-    verts_file = '00FC-1838'
+    verts_file = '021F-0F5D'
     #coords = get_verts_data('0059-1650', stride=8, float16=True, offset=4)
-    coords = get_verts_data(verts_file, stride=8, float16=True, offset=16)
+    coords = get_verts_data(verts_file, stride=16, float16=True, offset=0)
     write_obj(verts_file)
