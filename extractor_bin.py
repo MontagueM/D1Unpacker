@@ -20,8 +20,8 @@ def get_file_typename(file_type, file_subtype, reference, file_size):
             return 'Dynamic Model Header 3?'
         return '8080xxxx Structure File'
     elif file_type == 16 and file_subtype == 0:
-        if file_size == 80:
-            return 'Texture Header'
+        if file_size == 80:  # Not always the case sadly. Also need to check for BEEFCAFE
+            return 'Probably Texture Header'
         elif file_size == 0:
             return 'Index/Vertex Header'
         return 'Header'

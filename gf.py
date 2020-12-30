@@ -64,6 +64,9 @@ def get_pkg_name(file):
             pkg_name = folder
             break
     else:
+        if '0042-' in file:
+            return 'ui_startup_unpatchable'
+
         print(f'Could not find folder for {file}. File is likely not a model or folder does not exist.')
         return None
     return pkg_name
