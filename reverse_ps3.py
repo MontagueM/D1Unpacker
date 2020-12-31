@@ -71,9 +71,9 @@ def find_str_binary(search_str, do_print=True, select=None, to_ban=False):
         if do_print:
             print(f'Searching in {folder}, index {i}')
         pkg_name = gf.get_pkg_name(f'{folder.split("_")[-1]}-0000')
-        entries_filetype = {x: y for x, y in pkg_db.get_entries_from_table(pkg_name, 'FileName, FileType')}
-        entries_refid = {x: y for x, y in pkg_db.get_entries_from_table(pkg_name, 'FileName, RefID')}
-        entries_refpkg = {x: y for x, y in pkg_db.get_entries_from_table(pkg_name, 'FileName, RefPKG')}
+        all_file_info = {x: y for x, y in {x[0]: dict(zip(['Reference', 'FileType', 'FileSize'], x[1:])) for x in
+                                           pkg_db.get_entries_from_table('Everything',
+                                                                         'FileName, Reference, FileType, FileSizeB')}.items()}
         for file in os.listdir(search_dir + folder):
             fbin = open(search_dir + folder + '/' + file, 'rb').read()
             find = [m.start() for m in re.finditer(re.escape(search_str), fbin)]
@@ -83,14 +83,13 @@ def find_str_binary(search_str, do_print=True, select=None, to_ban=False):
                 if do_print:
                     try:
                         hsh = gf.get_flipped_hex(gf.get_hash_from_file(file), 8).upper()
-                        xhsh = ''.join([r'\x' + hsh[i:i+2] for i in range(0, len(hsh), 2)])
-                        print(f'Found string in {file}, {hsh} {xhsh} {entries_refid[file.replace(".bin", "")]} {entries_refpkg[file.replace(".bin", "")]} at bytes {find}.')  # There may be more as not accounting for copies.
+                        a = [r'\x' + hsh[i:i+2] for i in range(0, len(hsh), 2)]
+                        xhsh = ''.join(a)
+                        xhshd1 = ''.join(gf.get_flipped_bin(a, 4))
+                        print(f'Found string in {file}, {hsh} {gf.get_flipped_hex(hsh, 8)} {xhsh} {xhshd1} "{all_file_info[file.replace(".bin", "")]["FileType"]}" FileSize {all_file_info[file.replace(".bin", "")]["FileSize"]} Ref 0x{all_file_info[file.replace(".bin", "")]["Reference"]} at bytes {find}.')  # There may be more as not accounting for copies.
                     except KeyError:
                         print('Error in printing, file not available')
-                    try:
-                        print('File type', entries_filetype[file.replace('.bin', '')])
-                    except:
-                        print(f'Database not available for typing')
+
     if do_print:
         print(files)
     return files
@@ -102,6 +101,10 @@ if __name__ == '__main__':
     # find_str_binary(b'\x80\xC3\xEF\x65', select='trv')
 
     # Lightmail from API
-    find_str_binary(b'\xA3\xDC', select='gear')
+
+    # Other armour 988AA080 \x80\xA0\x8A\x98  -> \x80\xA0\x51\xE8  A48AA080
+
+    # Statics
+    find_str_binary(b'\x05\x19\x00\x00', select='investment')
     # find_str_binary(b'\x10\xA3\xE8\xF2\xE9\x63\x00\x01', select='0114')
 

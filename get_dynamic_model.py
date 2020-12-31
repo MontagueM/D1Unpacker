@@ -122,6 +122,11 @@ def get_verts_data(verts_file, all_file_info, is_uv):
         Other dyn
         """
         coords = get_coords_16(hex_data_split)
+    elif stride_header.StrideLength == 20:
+        """
+        Other dyn
+        """
+        coords = get_coords_20(hex_data_split)
     else:
         raise Exception(f'Need to add support for stride length {stride_header.StrideLength}')
 
@@ -160,6 +165,18 @@ def get_coords_12(hex_data_split):
 
 
 def get_coords_16(hex_data_split):
+    coords = []
+    for hex_data in hex_data_split:
+        coord = []
+        # magic, magic_negative = get_float16(hex_data[12:16], 0)
+        for j in range(2):
+            flt = get_float16(hex_data, j, is_uv=True)
+            coord.append(flt)
+        coords.append(coord)
+    return coords
+
+
+def get_coords_20(hex_data_split):
     coords = []
     for hex_data in hex_data_split:
         coord = []
@@ -405,12 +422,12 @@ def get_verts_faces_files(model_file):
                 hf.pkg_name = gf.get_pkg_name(hf.name)
                 if j == 0:
                     # hf.header = hf.get_header()
-                    hf.StrideLength = 12
+                    hf.StrideLength = 8
                     # print(f'Position file {hf.name} stride {hf.header.StrideLength}')
                     pos_verts_files.append(hf)
                 elif j == 8:
                     # hf.header = hf.get_header()
-                    hf.StrideLength = 16
+                    hf.StrideLength = 20
                     # print(f'UV file {hf.name} stride {hf.header.StrideLength}')
                     uv_verts_files.append(hf)
                 elif j == 32:
@@ -519,5 +536,5 @@ if __name__ == '__main__':
     pkg_db.start_db_connection('ps3')
     all_file_info = {x[0]: dict(zip(['RefID', 'RefPKG', 'FileType'], x[1:])) for x in
                      pkg_db.get_entries_from_table('Everything', 'FileName, RefID, RefPKG, FileType')}
-    parent_file = '021F-0F4A'
+    parent_file = '0137-01C5'
     get_model(parent_file, all_file_info, lod=False)

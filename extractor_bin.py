@@ -18,6 +18,8 @@ def get_file_typename(file_type, file_subtype, reference, file_size):
     if file_type == 8:
         if reference == 'B51A8080':
             return 'Dynamic Model Header 3?'
+        elif reference == '4C1B8080':
+            return 'Material'
         return '8080xxxx Structure File'
     elif file_type == 16 and file_subtype == 0:
         if file_size == 80:  # Not always the case sadly. Also need to check for BEEFCAFE
@@ -72,7 +74,7 @@ def decode_entry_c(entry_c_data):
 
 
 def decode_entry_d(entry_c_data, entry_d_data):
-    file_size = (entry_d_data & 0x3FFFFFF) << 4 | (entry_c_data >> 28) & 0xF
+    file_size = (entry_c_data & 0x3FFFFFF) << 4 | (entry_d_data >> 28) & 0xF
     unknown = (entry_d_data >> 26) & 0x3F
 
     return np.uint32(file_size), np.uint8(unknown)
@@ -301,7 +303,9 @@ class Package:
             ref_id, ref_pkg_id, ref_unk_id = decode_entry_a(entry.EntryA)
             file_type, file_subtype = decode_entry_b(entry.EntryB)
             starting_block, starting_block_offset = decode_entry_c(entry.EntryD)
-            file_size, unknown = decode_entry_d(entry.EntryC, entry.EntryC)
+            if file_type == 16 and file_subtype == 0 and ref_id == 352:
+                a = 0
+            file_size, unknown = decode_entry_d(entry.EntryC, entry.EntryD)
             file_name = f"{self.package_header.PackageIDH}-{gf.fill_hex_with_zeros(hex(count)[2:], 4)}"
             reference = gf.get_flipped_hex(binascii.hexlify(entry.EntryABin).decode().upper(), 8)
             file_typename = get_file_typename(file_type, file_subtype, reference, file_size)
@@ -431,7 +435,7 @@ def unpack_all(path, custom_direc):
         # if '0104' not in pkg:
         #     continue
         pkg = Package(f'{path}/{pkg_full}')
-        pkg.extract_package(extract=False, custom_direc=custom_direc)
+        pkg.extract_package(extract=True, custom_direc=custom_direc)
 
 
 if __name__ == '__main__':

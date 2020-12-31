@@ -37,20 +37,39 @@ def get_verts_data(verts_file, stride, float16, offset=0):
             coord.append(flt)
         coord[-1] = 0
         coords.append(coord)
+
     return coords
 
 
-def write_obj(verts_file):
+def get_faces_data(faces_file):
+    faces = []
+    faces_hex = gf.get_hex_data(f'I:/d1/output/{gf.get_pkg_name(verts_file)}/{faces_file}.bin')
+    int_faces_data = [int(faces_hex[i:i+4], 16)+1 for i in range(0, len(faces_hex), 4)]
+    for i in range(0, len(int_faces_data), 3):
+        face = []
+        for j in range(3):
+            face.append(int_faces_data[i+j])
+        faces.append(face)
+    return faces
+
+
+
+def write_obj(verts_file, coords, faces=None):
     with open(f'test_verts/test.obj', 'w') as f:
         f.write(f'o {verts_file}\n')
         for coord in coords:
             f.write(f'v {coord[0]} {coord[1]} {coord[2]}\n')
+        if faces:
+            for face in faces:
+                f.write(f'f {face[0]} {face[1]} {face[2]}\n')
     print(f'Written to file.')
 
 
 if __name__ == '__main__':
     pkg_db.start_db_connection('ps3')
-    verts_file = '021F-0F5D'
-    #coords = get_verts_data('0059-1650', stride=8, float16=True, offset=4)
-    coords = get_verts_data(verts_file, stride=16, float16=True, offset=0)
-    write_obj(verts_file)
+    verts_file = '0137-01CA'
+    faces = []
+    # faces_file = '02BA-0AF7'
+    coords = get_verts_data(verts_file, stride=20, float16=True, offset=4)
+    # faces = get_faces_data(faces_file)
+    write_obj(verts_file, coords, faces)
