@@ -20,8 +20,16 @@ def get_file_typename(file_type, file_subtype, reference, file_size):
             return 'Dynamic Model Header 2'
         elif reference == '61088080':
             return 'Dynamic Model Header 1'
+        elif reference == '3C1C8080':
+            return 'Texture Plate Header'
+        elif reference == '47018080':
+            return 'Texture Plate'
         elif reference == '4C1B8080':
             return 'Material'
+        elif reference == '901A8080':
+            return 'Baked Map Region'
+        elif reference == '751B8080':
+            return 'Map'
         return '8080xxxx Structure File'
     elif file_type == 16 and file_subtype == 0:
         if file_size == 88:  # Not always the case sadly. Also need to check for BEEFCAFE

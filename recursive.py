@@ -63,4 +63,4 @@ def type_recursive(file, start_offset, string, max_depth, path, layer, files_sea
 
 if __name__ == '__main__':
     pkg_db.start_db_connection('ps3')
-    search_recursive(file='0103-00B7', search='type', max_depth=4, start_offset=0)
+    search_recursive(file='0103-0017', search='type', max_depth=4, start_offset=0)

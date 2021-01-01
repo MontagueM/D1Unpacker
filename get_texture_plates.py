@@ -10,16 +10,23 @@ class TexturePlateSet:
         self.topfile = dyn_model_1
         self.plates = self.get_plates()
 
-    def get_plate_set(self):
+    def get_plate_set(self, all_file_info):
         for type, plate in self.plates.items():
-            plate.get_plate_data()
-            plate.get_plate_textures()
+            ret = plate.get_plate_data()
+            if not ret:
+                return False
+            plate.get_plate_textures(all_file_info)
+        return True
 
     def get_plates(self):
         fb = open(f'I:/d1/output/{gf.get_pkg_name(self.topfile)}/{self.topfile}.bin', 'rb').read()
         # This offset is a guess for now
-        platesetfile = gf.get_file_from_hash(binascii.hexlify(fb[0x7C8:0x7C8+4]))
-        fb = open(f'I:/d1/output/{gf.get_pkg_name(platesetfile)}/{platesetfile}.bin', 'rb').read()
+        offset = fb.find(b'\x80\x80\x1B\x79\xFF\xFF\xFF\xF4')+16
+        platesetfile = gf.get_file_from_hash(binascii.hexlify(fb[offset:offset+4]))
+        try:
+            fb = open(f'I:/d1/output/{gf.get_pkg_name(platesetfile)}/{platesetfile}.bin', 'rb').read()
+        except FileNotFoundError:
+            return False
         diffuse = TexturePlate(gf.get_file_from_hash(binascii.hexlify(fb[0x20:0x20+4])), 'diffuse')
         normal = TexturePlate(gf.get_file_from_hash(binascii.hexlify(fb[0x24:0x24+4])), 'normal')
         gstack = TexturePlate(gf.get_file_from_hash(binascii.hexlify(fb[0x28:0x28+4])), 'gstack')
@@ -38,6 +45,8 @@ class TexturePlate:
         self.textures = []
 
     def get_plate_data(self):
+        if self.file == 'FBFF-1FFF':
+            return False
         fb = open(f'I:/d1/output/{gf.get_pkg_name(self.file)}/{self.file}.bin', 'rb').read()
         file_count = gf.get_int16_big(fb, 0xE)
         table_offset = 0x30
@@ -49,20 +58,26 @@ class TexturePlate:
             tex.resizex = gf.get_int32_big(fb, i+0xC)
             tex.resizey = gf.get_int32_big(fb, i+0x10)
             self.textures.append(tex)
+        return True
 
-    def get_plate_textures(self):
+    def get_plate_textures(self, all_file_info):
         for tex in self.textures:
             tex.image = gip.get_image_png(tex.tex_header, all_file_info)
 
             # Adjusting normal colours
             if self.type == 'normal':
                 r, g, b, a = tex.image.split()
-                g = ImageOps.invert(g)
+                # Technically we should do a green invert but to match the stuff that comes from the tool we wont do it
+                # g = ImageOps.invert(g)
                 b = ImageOps.invert(b)
                 tex.image = Image.merge('RGB', (a, g, b))
 
             # Resizing
-            tex.image.resize([tex.resizex, tex.resizey])
+            if self.type == 'normal':
+                # print(f'resizing to {tex.resizex} {tex.resizey}')
+                tex.resizex *= 2
+                tex.platex *= 2
+            tex.image = tex.image.resize([tex.resizex, tex.resizey])
 
     def export_plate(self, save_dir):
         bg_plate = Image.new('RGBA', [1024, 1024], (0, 0, 0, 0))  # Makes a transparent image as alpha = 0
@@ -86,7 +101,9 @@ if __name__ == '__main__':
                                        pkg_db.get_entries_from_table('Everything',
                                                                      'FileName, Reference, FileType')}.items()}
 
-    file = '0103-00B7'
+    file = '0103-1324'
     texplateset = TexturePlateSet(file)
-    texplateset.get_plate_set()
-    texplateset.export_texture_plate_set('imagetests/lightning_mark')
+    ret = texplateset.get_plate_set(all_file_info)
+    if not ret:
+        raise Exception('Something wrong')
+    texplateset.export_texture_plate_set('imagetests/test')
