@@ -13,9 +13,8 @@ import binascii
 @dataclass
 class Stride12Header:
     EntrySize: np.uint32 = np.uint32(0)
-    StrideLength: np.uint16 = np.uint16(0)
-    Unk: np.uint16 = np.uint16(0)
-    DeadBeef: np.uint32 = np.uint32(0)
+    StrideLength: np.uint32 = np.uint32(0)
+    BeefCafe: np.uint32 = np.uint32(0)
 
 
 class File:
@@ -30,32 +29,32 @@ class HeaderFile(File):
         super().__init__()
         self.header = header
 
-    # def get_header(self):
-    #     if self.header:
-    #         print('Cannot get header as header already exists.')
-    #         return
-    #     else:
-    #         if not self.name:
-    #             self.name = gf.get_file_from_hash(self.uid)
-    #         pkg_name = gf.get_pkg_name(self.name)
-    #         header_hex = gf.get_hex_data(f'{test_dir}/{pkg_name}/{self.name}.bin')
-    #         return get_header(header_hex, Stride12Header())
+    def get_header(self):
+        if self.header:
+            print('Cannot get header as header already exists.')
+            return
+        else:
+            if not self.name:
+                self.name = gf.get_file_from_hash(self.uid)
+            pkg_name = gf.get_pkg_name(self.name)
+            header_hex = gf.get_hex_data(f'{test_dir}/{pkg_name}/{self.name}.bin')
+            return get_header(header_hex, Stride12Header())
 
 
-# def get_header(file_hex, header):
-#     # The header data is 0x16F bytes long, so we need to x2 as python reads each nibble not each byte
-#     for f in fields(header):
-#         if f.type == np.uint32:
-#             flipped = "".join(gf.get_flipped_hex(file_hex, 8))
-#             value = np.uint32(int(flipped, 16))
-#             setattr(header, f.name, value)
-#             file_hex = file_hex[8:]
-#         elif f.type == np.uint16:
-#             flipped = "".join(gf.get_flipped_hex(file_hex, 4))
-#             value = np.uint16(int(flipped, 16))
-#             setattr(header, f.name, value)
-#             file_hex = file_hex[4:]
-#     return header
+def get_header(file_hex, header):
+    # The header data is 0x16F bytes long, so we need to x2 as python reads each nibble not each byte
+    for f in fields(header):
+        if f.type == np.uint32:
+            flipped = file_hex[:8]
+            value = np.uint32(int(flipped, 16))
+            setattr(header, f.name, value)
+            file_hex = file_hex[8:]
+        elif f.type == np.uint16:
+            flipped = file_hex[:4]
+            value = np.uint16(int(flipped, 16))
+            setattr(header, f.name, value)
+            file_hex = file_hex[4:]
+    return header
 
 
 test_dir = 'I:/d1/output'
@@ -95,41 +94,73 @@ def get_verts_data(verts_file, all_file_info, is_uv):
     if not pkg_name:
         return None
     ref_file = f"{all_file_info[verts_file.name]['RefPKG'][2:]}-{all_file_info[verts_file.name]['RefID'][2:]}"
-    print(f'pos verts file {ref_file}')
+    stride_header = verts_file
+    if is_uv:
+        print(f'uv verts file {ref_file} stride {stride_header.header.StrideLength}')
+    else:
+        print(f'pos verts file {ref_file} stride {stride_header.header.StrideLength}')
     ref_pkg_name = gf.get_pkg_name(ref_file)
     # ref_pkg_name, ref_file, ref_file_type = get_referenced_file(verts_file)
-    stride_header = verts_file
 
     stride_hex = gf.get_hex_data(f'{test_dir}/{ref_pkg_name}/{ref_file}.bin')
 
-    # print(stride_header.StrideLength)
-    hex_data_split = [stride_hex[i:i + stride_header.StrideLength * 2] for i in
-                      range(0, len(stride_hex), stride_header.StrideLength * 2)]
+    # print(stride_header.header.StrideLength)
+    hex_data_split = [stride_hex[i:i + stride_header.header.StrideLength * 2] for i in
+                      range(0, len(stride_hex), stride_header.header.StrideLength * 2)]
     # print(verts_file.name)
 
-    if stride_header.StrideLength == 8:
+    if stride_header.header.StrideLength == 4:
+        """
+        ???
+        """
+        if not is_uv:
+            print('Broken')
+            return
+        coords = get_coords_4(hex_data_split)
+    elif stride_header.header.StrideLength == 8:
         """
         Pos dyn
         """
         coords = get_coords_8(hex_data_split)
-    elif stride_header.StrideLength == 12:
+    elif stride_header.header.StrideLength == 12:
         """
-        Pos dyn
+        Pos dyn or uvs?
         """
-        coords = get_coords_12(hex_data_split)
-    elif stride_header.StrideLength == 16:
+        coords = get_coords_12(hex_data_split, is_uv)
+    elif stride_header.header.StrideLength == 16:
         """
-        Other dyn
+        Other dyn UVs
         """
         coords = get_coords_16(hex_data_split)
-    elif stride_header.StrideLength == 20:
+    elif stride_header.header.StrideLength == 20:
         """
-        Other dyn
+        Other dyn UVs
         """
         coords = get_coords_20(hex_data_split)
+    elif stride_header.header.StrideLength == 24:
+        """
+        Other dyn UVs
+        """
+        coords = get_coords_24(hex_data_split)
+    elif stride_header.header.StrideLength == 48:
+        """
+        Pos physcis-based prob
+        """
+        coords = get_coords_48(hex_data_split)
     else:
-        raise Exception(f'Need to add support for stride length {stride_header.StrideLength}')
+        raise Exception(f'Need to add support for stride length {stride_header.header.StrideLength}')
 
+    return coords
+
+
+def get_coords_4(hex_data_split):
+    coords = []
+    for hex_data in hex_data_split:
+        coord = []
+        for j in range(2):
+            flt = get_float16(hex_data, j, is_uv=True)
+            coord.append(flt)
+        coords.append(coord)
     return coords
 
 
@@ -144,22 +175,18 @@ def get_coords_8(hex_data_split):
     return coords
 
 
-def get_coords_12(hex_data_split):
+def get_coords_12(hex_data_split, is_uv):
     coords = []
     for hex_data in hex_data_split:
         coord = []
-        for j in range(0, 3):
-            flt = get_float16(hex_data, j, is_uv=False)
-            # hx = hex_data[j * 8:j * 8 + 8]
-            # # Big-Mid Endian CDAB
-            # # hx = bytes.fromhex(hx[4:] + hx[:4])
-            # # Big-Mid Endian BADC
-            # u = hx[2:4] + hx[:2] + hx[-2:] + hx[-4:-2]
-            # hx = bytes.fromhex(hx[2:4] + hx[:2] + hx[-2:] + hx[-4:-2])
-            # if hx == b'':
-            #     break
-            # flt = struct.unpack('f', hx)[0]
-            coord.append(flt)
+        if is_uv:
+            for j in range(2):
+                flt = get_float16(hex_data, j, is_uv=False)
+                coord.append(flt)
+        else:
+            for j in range(3):
+                flt = get_float16(hex_data, j, is_uv=False)
+                coord.append(flt)
         coords.append(coord)
     return coords
 
@@ -168,7 +195,6 @@ def get_coords_16(hex_data_split):
     coords = []
     for hex_data in hex_data_split:
         coord = []
-        # magic, magic_negative = get_float16(hex_data[12:16], 0)
         for j in range(2):
             flt = get_float16(hex_data, j, is_uv=True)
             coord.append(flt)
@@ -180,9 +206,28 @@ def get_coords_20(hex_data_split):
     coords = []
     for hex_data in hex_data_split:
         coord = []
-        # magic, magic_negative = get_float16(hex_data[12:16], 0)
         for j in range(2):
             flt = get_float16(hex_data, j, is_uv=True)
+            coord.append(flt)
+        coords.append(coord)
+    return coords
+
+def get_coords_24(hex_data_split):
+    coords = []
+    for hex_data in hex_data_split:
+        coord = []
+        for j in range(2):
+            flt = get_float16(hex_data, j, is_uv=True)
+            coord.append(flt)
+        coords.append(coord)
+    return coords
+
+def get_coords_48(hex_data_split):
+    coords = []
+    for hex_data in hex_data_split:
+        coord = []
+        for j in range(3):
+            flt = struct.unpack('f', bytes.fromhex(gf.get_flipped_hex(hex_data[j * 8:j * 8 + 8], 8)))[0]
             coord.append(flt)
         coords.append(coord)
     return coords
@@ -275,6 +320,9 @@ def get_submeshes(file, index, pos_verts, uv_verts, face_hex):
                 submeshes.remove(submesh)
                 continue
         faces = get_submesh_faces(submesh, face_hex, stride)
+        if not faces:
+            print('Issue with model')
+            return
         submesh.pos_verts = trim_verts_data(pos_verts, faces)
         if uv_verts:
             submesh.uv_verts = trim_verts_data(uv_verts, faces)
@@ -377,7 +425,10 @@ def get_submesh_faces(submesh: Submesh, faces_hex, stride):
             face = int_faces_data[face_index:face_index+3]
         else:
             # face = int_faces_data[face_index:face_index+3][::-1]
-            face = [int_faces_data[face_index+1], int_faces_data[face_index+0], int_faces_data[face_index+2]]
+            try:
+                face = [int_faces_data[face_index+1], int_faces_data[face_index+0], int_faces_data[face_index+2]]
+            except IndexError:
+                return False  # Idk why it causes IndexError, prob wrong strip? maybe its fan? idk
         if face == []:
             a = 0
         faces.append(face)
@@ -392,6 +443,7 @@ def get_face_hex(faces_file, all_file_info) -> str:
         ref_file = f"{all_file_info[faces_file.name]['RefPKG'][2:]}-{all_file_info[faces_file.name]['RefID'][2:]}"
     except KeyError:
         return ''
+    print(f'faces file {ref_file}')
     ref_pkg_name = gf.get_pkg_name(ref_file)
     faces_hex = gf.get_hex_data(f'{test_dir}/{ref_pkg_name}/{ref_file}.bin')
     return faces_hex
@@ -421,13 +473,13 @@ def get_verts_faces_files(model_file):
                 hf.name = gf.get_file_from_hash(hf.uid)
                 hf.pkg_name = gf.get_pkg_name(hf.name)
                 if j == 0:
-                    # hf.header = hf.get_header()
-                    hf.StrideLength = 8
+                    hf.header = hf.get_header()
+                    # hf.StrideLength = 8
                     # print(f'Position file {hf.name} stride {hf.header.StrideLength}')
                     pos_verts_files.append(hf)
                 elif j == 8:
-                    # hf.header = hf.get_header()
-                    hf.StrideLength = 20
+                    hf.header = hf.get_header()
+                    # hf.StrideLength = 20
                     # print(f'UV file {hf.name} stride {hf.header.StrideLength}')
                     uv_verts_files.append(hf)
                 elif j == 32:
@@ -482,6 +534,8 @@ def get_model(model_file, all_file_info, lod, temp_direc=''):
         # scaled_pos_verts = scale_verts(coords, model_file)
         face_hex = get_face_hex(faces_file, all_file_info)
         submeshes = get_submeshes(model_file, i, pos_verts, uv_verts, face_hex)
+        if not submeshes:
+            return
         first_mat = None
         submeshes_to_write = []
         for submesh in submeshes:
@@ -536,5 +590,13 @@ if __name__ == '__main__':
     pkg_db.start_db_connection('ps3')
     all_file_info = {x[0]: dict(zip(['RefID', 'RefPKG', 'FileType'], x[1:])) for x in
                      pkg_db.get_entries_from_table('Everything', 'FileName, RefID, RefPKG, FileType')}
-    parent_file = '0137-01C5'
-    get_model(parent_file, all_file_info, lod=False)
+    parent_file = '00FE-14F6'
+    get_model(parent_file, all_file_info, lod=True)
+    quit()
+
+    for file in all_file_info:
+        if 'Dynamic' in all_file_info[file]['FileType']:
+            if '00FE-' not in file:
+                continue
+            gf.mkdir(f'I:/d1/dynamic_models/{gf.get_pkg_name(file)}/')
+            get_model(file, all_file_info, lod=True, temp_direc=f'{gf.get_pkg_name(file)}/')

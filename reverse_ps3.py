@@ -102,9 +102,9 @@ if __name__ == '__main__':
 
     # Lightmail from API
 
-    # Other armour 988AA080 \x80\xA0\x8A\x98  -> \x80\xA0\x51\xE8  A48AA080
+    # Other armour 988AA080 \x80\xA0\x8A\x98  -> \x80\xA0\x51\xE8  A48AA080 -> \x80\xA0\x51\xE7
 
-    # Statics
-    find_str_binary(b'\x05\x19\x00\x00', select='investment')
+    # 83B581B2
+    find_str_binary(b'\x80\xA0\x60\xB9', select='gear')
     # find_str_binary(b'\x10\xA3\xE8\xF2\xE9\x63\x00\x01', select='0114')
 

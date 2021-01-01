@@ -56,7 +56,7 @@ def get_uncomp_image(img_file, width, height):
         print('Fix this for uncomp')
 
 
-def get_image(img_file, width, height, type, othertype, savedir, header_debug, force=None):
+def get_image(img_file, width, height, type, othertype, savedir, header_debug, force=None, png=False):
     if force:
         for x in DXGI_FORMAT:
             if force in x:
@@ -81,18 +81,12 @@ def get_image(img_file, width, height, type, othertype, savedir, header_debug, f
         form = 'DXGI_FORMAT_R8G8B8A8_TYPELESS'
     elif othertype in [0xA6, 0x86, 0xBF]:  # BF is a guess
         form = 'DXGI_FORMAT_BC1_TYPELESS'
-        form = 'DXT1'
-        formcode = '44585431'
-    # elif othertype in [0xA7, 0x87]:  # This is just guessing
-    #     form = 'DXGI_FORMAT_BC2_TYPELESS'
+        # form = 'DXT1'
+        # formcode = '44585431'
     elif othertype in [0xA8, 0x88]:
         form = 'DXGI_FORMAT_BC3_TYPELESS'
-        form = 'DXT4'
-        formcode = '44585434'
-    # elif othertype in [0xA9, 0x89]:  # This is just guessing
-    #     form = 'DXGI_FORMAT_BC4_TYPELESS'
-    # elif othertype in [0xAA, 0x8A]:  # This is just guessing
-    #     form = 'DXGI_FORMAT_BC5_TYPELESS'
+        # form = 'DXT4'
+        # formcode = '44585434'
     elif type in [12]:
         print(f'Found unknown type {type}, please fix.')
         return False
@@ -181,9 +175,23 @@ def get_image(img_file, width, height, type, othertype, savedir, header_debug, f
     # else:
     #     print('uhh')
     # if 'DXT' in form:
-    with open(savedir, 'wb') as b:
-        b.write(binascii.unhexlify(header))
-        b.write(data)
+    if png:
+        fb = open(f'I:/d1/output/{gf.get_pkg_name(img_file)}/{img_file}.bin', 'rb').read()
+        if 'BC1' in form:
+            dec = texture2ddecoder.decode_bc1(fb, width, height)
+            img = Image.frombytes('RGBA', [width, height], dec, 'raw', ("BGRA"))
+        elif 'BC3' in form:
+            dec = texture2ddecoder.decode_bc3(fb, width, height)
+            img = Image.frombytes('RGBA', [width, height], dec, 'raw', ("BGRA"))
+        elif 'R8G8B8A8' in form:
+            img = Image.frombytes('RGBA', [width, height], fb)
+        else:
+            raise Exception(f'Invalid form type for PNG output {form}')
+        img.save(savedir)
+    else:
+        with open(savedir, 'wb') as b:
+            b.write(binascii.unhexlify(header))
+            b.write(data)
     # else:
     #     get_uncomp_image(img_file, width, height)
     # write_file(bc1_header, header, data, f'I:/imgtests/{img_file}.dds')
@@ -210,11 +218,11 @@ def write_file(header, ogheader, file_hex, save_path):
         print(f'written to {save_path}')
 
 
-def get_comp_image(img_file):
-    fb = open(f'I:/d1/output/{gf.get_pkg_name(img_file)}/{img_file}.bin', 'rb').read()
-    dec = texture2ddecoder.decode_bc3(fb, 1024, 512)
-    img = Image.frombytes('RGBA', [1024, 512], dec, 'raw', ("BGRA"))
-    img.save(f'imagetests/{img_file}.png')
+# def get_comp_image(img_file):
+#     fb = open(f'I:/d1/output/{gf.get_pkg_name(img_file)}/{img_file}.bin', 'rb').read()
+#     dec = texture2ddecoder.decode_bc3(fb, 1024, 512)
+#     img = Image.frombytes('RGBA', [1024, 512], dec, 'raw', ("BGRA"))
+#     img.save(f'imagetests/{img_file}.png')
 
 
 if __name__ == '__main__':
@@ -246,8 +254,8 @@ if __name__ == '__main__':
                 u = gf.get_file_from_hash_d2(all_file_info[ref_file]['Reference'])
                 if u != 'FBFF-1FFF':
                     ref_file = u
-                gf.mkdir(f'I:/d1/images_dxt_counter/{gf.get_pkg_name(header)}')
-                ret = get_image(ref_file, width, height, type, othertype, f'I:/d1/images_dxt_counter/{gf.get_pkg_name(header)}/{counter}.dds', header)
+                gf.mkdir(f'I:/d1/images_png_counter/{gf.get_pkg_name(header)}')
+                ret = get_image(ref_file, width, height, type, othertype, f'I:/d1/images_png_counter/{gf.get_pkg_name(header)}/{counter}.png', header, png=True)
                 if ret:
                     print(f'saved {header}.dds, img {ref_file}')
                     counter += 1

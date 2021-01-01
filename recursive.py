@@ -35,7 +35,7 @@ def type_recursive(file, start_offset, string, max_depth, path, layer, files_sea
             hsh = entries[hsh]['Reference']
             if hsh not in files_searched:
                 files_searched += [hsh]
-                print(f'In {entries[hsh]["FileName"]} {hsh} layer {layer} type {entries[hsh]["FileType"]} ref {entries[hsh]["Reference"]} via reference')
+                print(f'In {entries[hsh]["FileName"]} {hsh} {gf.get_flipped_hex(hsh, 8)} layer {layer} type {entries[hsh]["FileType"]} ref {entries[hsh]["Reference"]} via reference')
                 type_recursive(entries[hsh]["FileName"], start_offset, string, max_depth,
                                path + ['->', entries[hsh]["FileName"]], layer + 1, files_searched, entries, ftype)
 
@@ -48,9 +48,9 @@ def type_recursive(file, start_offset, string, max_depth, path, layer, files_sea
             if hsh in entries.keys():
                 if hsh not in files_searched:
                     if ftype:
-                        print(f'In {entries[hsh]["FileName"]} {hsh} layer {layer}')
+                        print(f'In {entries[hsh]["FileName"]} {hsh} {gf.get_flipped_hex(hsh, 8)} layer {layer}')
                     else:
-                        print(f'In {entries[hsh]["FileName"]} {hsh} layer {layer} type {entries[hsh]["FileType"]} ref {entries[hsh]["Reference"]}')
+                        print(f'In {entries[hsh]["FileName"]} {hsh} {gf.get_flipped_hex(hsh, 8)} layer {layer} type {entries[hsh]["FileType"]} ref {entries[hsh]["Reference"]}')
                     files_searched += [hsh]
                     if ftype:
                         if entries[hsh]["FileType"][0] == ftype:
@@ -63,4 +63,4 @@ def type_recursive(file, start_offset, string, max_depth, path, layer, files_sea
 
 if __name__ == '__main__':
     pkg_db.start_db_connection('ps3')
-    search_recursive(file='0137-01C5', search='type', max_depth=8, start_offset=0)
+    search_recursive(file='0103-00B7', search='type', max_depth=4, start_offset=0)

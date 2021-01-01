@@ -5,7 +5,7 @@ import binascii
 
 def get_float16(hex_data, j, is_uv=False):
     # flt = get_signed_int(gf.get_flipped_hex(hex_data[j * 4:j * 4 + 4], 4), 16)
-    flt = int.from_bytes(binascii.unhexlify(hex_data[j * 4:j * 4 + 4]), 'big', signed=True)
+    flt = int.from_bytes(binascii.unhexlify(hex_data[j * 4:j * 4 + 4]), 'little', signed=True)
     if j == 1 and is_uv:
         flt *= -1
     flt = 1 + flt / (2 ** 15 - 1)
@@ -35,7 +35,7 @@ def get_verts_data(verts_file, stride, float16, offset=0):
             else:
                 flt = struct.unpack('f', bytes.fromhex(gf.get_flipped_hex(hex_data[j*8:j*8+8], 8)))[0]
             coord.append(flt)
-        coord[-1] = 0
+        # coord[-1] = 0
         coords.append(coord)
 
     return coords
@@ -67,9 +67,9 @@ def write_obj(verts_file, coords, faces=None):
 
 if __name__ == '__main__':
     pkg_db.start_db_connection('ps3')
-    verts_file = '0137-01CA'
+    verts_file = '00FE-14FD'
     faces = []
     # faces_file = '02BA-0AF7'
-    coords = get_verts_data(verts_file, stride=20, float16=True, offset=4)
+    coords = get_verts_data(verts_file, stride=12, float16=True, offset=0)
     # faces = get_faces_data(faces_file)
     write_obj(verts_file, coords, faces)

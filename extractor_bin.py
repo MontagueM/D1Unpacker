@@ -17,14 +17,16 @@ Main program with every other file concatenated into a single file
 def get_file_typename(file_type, file_subtype, reference, file_size):
     if file_type == 8:
         if reference == 'B51A8080':
-            return 'Dynamic Model Header 3?'
+            return 'Dynamic Model Header 2'
+        elif reference == '61088080':
+            return 'Dynamic Model Header 1'
         elif reference == '4C1B8080':
             return 'Material'
         return '8080xxxx Structure File'
     elif file_type == 16 and file_subtype == 0:
-        if file_size == 80:  # Not always the case sadly. Also need to check for BEEFCAFE
-            return 'Probably Texture Header'
-        elif file_size == 0:
+        if file_size == 88:  # Not always the case sadly. Also need to check for BEEFCAFE
+            return 'Texture Header'
+        elif file_size == 12:
             return 'Index/Vertex Header'
         return 'Header'
     elif file_type == 0 and file_subtype == 4:
@@ -435,7 +437,7 @@ def unpack_all(path, custom_direc):
         # if '0104' not in pkg:
         #     continue
         pkg = Package(f'{path}/{pkg_full}')
-        pkg.extract_package(extract=True, custom_direc=custom_direc)
+        pkg.extract_package(extract=False, custom_direc=custom_direc)
 
 
 if __name__ == '__main__':
